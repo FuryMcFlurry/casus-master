@@ -1,0 +1,11 @@
+{
+    "require-dev": {
+        "kahlan/kahlan": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src",
+            "Categories\\": "src/Categories"
+        }
+    }
+}

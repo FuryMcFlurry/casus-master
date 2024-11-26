@@ -1,0 +1,227 @@
+Initial assumptions.
+
+I was under the assumption I firstly had to make a page to handle shopping items and the likes. 
+but upon re-reading I would have to refector and make it work with an existing test.
+
+These no web pages, I am used to dusk tests, Kahlan deals with pure php.
+
+Selling the best products, mention of a quality that is tied to a expiration date.
+I am told rules of the system of a cafe. 
+
+-Each item has a VerkopenVoor value that ticks down? (integer? date?), items needs to be sold before this reaches 0. 
+-Items also possess a Kwaliteit value, which describes the quality. (string? or links to a different table/array that holds default descriptions?)
+-At the end of the day, each VerkopenVoor and Kwaliteit drops by 1. (it only handles with integers, got it.)
+
+Additional rules, or exceptions.
+
+-The moment a verkoopdatum has passed (VerkopenVoor is equal to 0??) the Kwaliteit's value decreased twicefold. (multiply the decreasing count by 2)
+-Kwaliteit can never be negative. (unsigned integer here? we can clamp numbers with a max() function. max(0, $Kwaliteit) after each tick, ensures it will always be at least a 0.)
+-Categorie "Rode Wijn" rather increases in quality how long the item exists. (How would this play with VerkopenVoor? does it ignore the twicefold rule?)
+-Kwaliteit can never be more than 50. ( using min() to clamp it to a max of 50?)
+-Another Categorie "BBQ", this never needs to be sold, nor does it decrease in Kwaliteit. (switchcase to instantly return the moment it sees "BBQ"? What would be the default values of this be?)
+-Categorie "Wit Wijn" like "Rode Wijn" Kwaliteit increases rather than decreases. 
+--Additional rules on "Wit Wijn" if on tick VerkopenVoor was 10 or less, Kwaliteit raises by two instead.
+--If on tick VerkopenVoor was 5 or less, Kwaliteit raises by three instead.
+--However if VerkopenVoor's value was 0, set the Kwaliteit to 0. (Switch cases with basic >= checks? eg: case $verkopenVoor <= 10:)
+
+Final two rules.
+-Categorie "Kloosterbier" Kwaliteit by default decreases twice as fast. (Im thinking adding an additional parameter to all items to have a decay multiplier, if somehow the future needs a triple as fast decay? how would this play with unique rules on ticks?)
+-All items cannot have an item quality above 50, exceptions are categorie "BBQ" the max here is 80. and never changes. (Hardcoding a value? in my software? Ignore tick rate entirely?)
+
+
+From what I can tell, I certainly can put out an ugly ifstatement pyramid with all the checks in place to handle it.
+But then, when adding a new categorie would mean someone has to decypher the pyramid's logic.
+
+Have each class be handled in its own space would be the optimal solution.
+
+My tasks still are as following.
+
+Refactor Klosterke.php into reusable classes.
+Add a new product categorie, "Kloosterbier". The specificaties are found in the comments in KlosterkeSpec.php.
+
+
+-Refactoring, Assumptions
+
+I need to refactor Klosterke.php into multiple classes.
+Assumptions here are dangerious. 
+So from what I can guess, I'd need to have a main class that handles the tick system as per the rules written above.
+And categories are each put in its own folder.  And an additional one created for "Kloosterbier"
+
+
+Class design.
+
+It needs an name, kwaliteit and verkopenVoor. this is is the initial idea.
+I'll add in, a maxQuality, decayMultiplier.
+Would each of the classes hold their own tick function? How would the unit testing handle? will I violate DRY practices if I'd had this happen?
+A main blueprint class, and this extends to its own category. 
+So, an abstract class.
+
+
+Kahlan and Spec.
+
+$item = Klosterke::of('normal', 10, -5);
+Klosterke:: invokes the __construct, and sets names and the likes.
+eg: normal is a normal product, 10 is the current quality, and -5 is the verkopenVoor.
+The test then ticks it once, and expects the quality to drop by 2, and verkopenvoor by 1.
+
+past line 249, i assume i need to uncomment it, and make sure my refectorations handle the test without fail.
+
+
+The plan/ Todo
+
+Refactoring Klosterke.php 
+	[X]This would need its own main class, for now have Klosterke.php  be this class.
+	[X]Keep variables in dutch, and filenames too.
+	[X]Lets make a folder, holding a product.php as an abstract class. 
+	[x]rebuild the tick function to handle to classes
+	[x]Make a factoryclass to handle product creation, and easier categorie additions.
+	[x]Modify composer.json to handle new namespaces/classes
+	
+	
+Default product tick.
+	[X]Each tick lowers $kwaliteit and $verkopenVoor
+	[X]if $verkopenVoor is 0, $kwaliteit is dropped by an additional increment. (multiply $vervalsnelheid by 2)
+	[X]$kwaliteit cannot go below 0.
+	[X]$kwaliteit cannot go above 50.
+	
+	
+Unique Product classes, and their tick rules.
+
+Rode wijn.
+	[X]$kwaliteit is increased rather than decreased. (To a max of 50, handled via $maxKwaliteit and the clampQuality code.)
+
+BBQ
+	[X]$kwaliteit is fixed at 80.
+	[X]$verkopenVoor is also fixed at its initial value.
+	[X]overwrite the tick function with this.
+	
+Witte wijn.
+	[X]Like Red wine, $kwaliteit is increased rather than decreased. (To a max of 50, handled via $maxKwaliteit)
+	[X]Different rates for $kwaliteit at different level of $verkopenVoor. See below.
+	[X]-if on tick VerkopenVoor was 10 or less, Kwaliteit raises by two increments instead. (set $vervalsnelheid to 2)
+	[X]-If on tick VerkopenVoor was 5 or less, Kwaliteit raises by three instead. (set $vervalsnelheid to 3)
+	[X]-However if VerkopenVoor's value was 0, set the Kwaliteit to 0.
+
+
+Kloosterbier
+	[x]$kwaliteit decreased twice fold. (set $vervalsnelheid to 2, default tick handles this.)
+
+
+Testing with Kahlan, learning
+
+	[x]Figure out how it works.
+	[x]Update Kahlan to work with my php version.
+	[x]Run the tests via php vendor/bin/kahlan in root folder.
+	Document what works and doesnt.
+	
+Documentation
+
+Expectations   : 32 Executed
+Specifications : 0 Pending, 0 Excluded, 0 Skipped
+
+Passed 15 of 23 FAIL (FAILURE: 1, EXCEPTION: 7) in 0.108 seconds (using 2MB)
+
+
+ x it update normal itemsvoor de verkoopdatum
+        an uncaught exception has been thrown in `\G\webDev\casus-master\casus-master\src\ProductFactory.php` line 15
+
+        message:`Error` Code(0) with message "Class \"App\\NormalProduct\" not found"
+
+Typo's need to be resolved. inside of ProductFactory
+
+Expectations   : 40 Executed
+Specifications : 0 Pending, 0 Excluded, 0 Skipped
+
+Passed 19 of 23 FAIL (FAILURE: 1, EXCEPTION: 3) in 0.126 seconds (using 3MB)
+
+Should I rename the factory to be dutch?
+
+losterke
+  #tick
+    BBQ items
+      x it update BBQ items voor de verkoopdatum
+        an uncaught exception has been thrown in `\G\webDev\casus-master\casus-master\src\Categories\BBQ.php` line 9
+
+        message:`Kahlan\PhpErrorException` Code(0) with message "`E_DEPRECATED` Optional parameter \$maxKwaliteit declared before required parameter \$vervalsnelheid is implicitly treated as a required parameter"
+		
+Swapping around and hard coding the decay being 0. 
+
+Klosterke
+  #tick
+    BBQ items
+      x it update BBQ items voor de verkoopdatum
+        expect->toBe() failed in `.spec\KlosterkeSpec.php` line 129
+
+        It expect actual to be identical to expected (===).
+
+        actual:
+          (integer) 80
+        expected:
+          (integer) 10
+		  
+This is strange. The task claims: "maar "BBQ", als historisch item, heeft een kwaliteit van 80 en verandert nooit."
+The tests only checks if the kwality remains static.
+Two options, change the test to handle the casus's explaination. Or change the BBQ class.
+Going with the latter, but will comment the 80's logic.
+
+
+Klosterke
+  #tick
+    Witte Wijn
+      x it update Wtte Wijn items long voor de verkoopdatum
+        expect->toBe() failed in `.spec\KlosterkeSpec.php` line 166
+
+        It expect actual to be identical to expected (===).
+
+        actual:
+          (integer) 12
+        expected:
+          (integer) 11
+
+
+Expectations   : 46 Executed
+Specifications : 0 Pending, 0 Excluded, 0 Skipped
+
+Passed 22 of 23 FAIL (FAILURE: 1) in 0.084 seconds (using 3MB)
+
+White wine has more logic.
+Lets see
+It inserts  $item = Klosterke::of('Witte Wijn - Chardonnay', 10, 11);
+kwalitie 10, verkopenvoor of 11. 
+Expected outcome.
+kwaliteit to be 11, (is 12)
+verkopenvoor being 10.
+
+Solution: used a equal or less (<=), instead of less (<).
+
+Now finally, uncomment the new  Kloosterbier  section.
+
+ Kloosterbier items
+      x it update Kloosterbier items na de verkoopdatum op de minimale kwaliteit
+        an uncaught exception has been thrown in `\G\webDev\casus-master\casus-master\src\Categories\Kloosterbier.php` line 9
+		 message:`ArgumentCountError` Code(0) with message "Too few arguments to function Categories\\Kloosterbier::__construct(), 3 passed
+
+The construct of the class now outright defaults to 50 now.
+
+
+            _     _
+  /\ /\__ _| |__ | | __ _ _ __
+ / //_/ _` | '_ \| |/ _` | '_ \
+/ __ \ (_| | | | | | (_| | | | |
+\/  \/\__,_|_| |_|_|\__,_|_| |_|
+
+The PHP Test Framework for Freedom, Truth and Justice.
+
+src directory  : G:\webDev\casus-master\casus-master\src
+spec directory : G:\webDev\casus-master\casus-master\spec
+
+.............................                                     29 / 29 (100%)
+
+
+
+Expectations   : 58 Executed
+Specifications : 0 Pending, 0 Excluded, 0 Skipped
+
+Passed 29 of 29 PASS in 0.054 seconds (using 3MB)
+
+
